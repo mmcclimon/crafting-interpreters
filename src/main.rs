@@ -28,6 +28,7 @@ fn run_file(path: &str) -> std::io::Result<()> {
   let mut file = File::open(path)?;
   let mut contents = String::new();
   file.read_to_string(&mut contents)?;
+  run(contents);
   Ok(())
 }
 
@@ -58,7 +59,7 @@ fn run_prompt() -> std::io::Result<()> {
 
 // returns hadError, effectively
 fn run(source: String) -> bool {
-  let scanner = Scanner::new(source);
+  let mut scanner = Scanner::new(source);
 
   for token in scanner.scan_tokens() {
     println!("{token}");
