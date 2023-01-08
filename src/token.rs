@@ -53,13 +53,29 @@ pub enum TokenType {
 #[derive(Debug)]
 pub struct Token {
   kind: TokenType,
-  lexeme: String,
+  pub lexeme: String,
   line: usize,
 }
 
 impl Token {
   pub fn new(kind: TokenType, lexeme: String, line: usize) -> Self {
     Token { kind, lexeme, line }
+  }
+
+  pub fn numeric_value(&self) -> Option<&f64> {
+    if let TokenType::Number(ref val) = self.kind {
+      Some(val)
+    } else {
+      None
+    }
+  }
+
+  pub fn string_value(&self) -> Option<&str> {
+    match self.kind {
+      TokenType::String(ref s) => Some(s),
+      TokenType::Identifier(ref s) => Some(s),
+      _ => None,
+    }
   }
 }
 

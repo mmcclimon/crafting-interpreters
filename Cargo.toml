@@ -12,4 +12,9 @@ name = "lox"
 path = "src/bin/lox.rs"
 test = false
 
+[[bin]]
+name = "ast-printer"
+path = "src/bin/ast_printer.rs"
+test = false
+
 [dependencies]
