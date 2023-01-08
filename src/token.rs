@@ -1,3 +1,5 @@
+type TT = TokenType;
+
 #[derive(Debug)]
 pub enum TokenType {
   // single-char tokens
@@ -53,28 +55,20 @@ pub enum TokenType {
 #[derive(Debug)]
 pub struct Token {
   kind: TokenType,
-  pub lexeme: String,
   line: usize,
 }
 
 impl Token {
-  pub fn new(kind: TokenType, lexeme: String, line: usize) -> Self {
-    Token { kind, lexeme, line }
+  pub fn new(kind: TokenType, line: usize) -> Self {
+    Token { kind, line }
   }
 
-  pub fn numeric_value(&self) -> Option<&f64> {
-    if let TokenType::Number(ref val) = self.kind {
-      Some(val)
-    } else {
-      None
-    }
-  }
-
-  pub fn string_value(&self) -> Option<&str> {
-    match self.kind {
-      TokenType::String(ref s) => Some(s),
-      TokenType::Identifier(ref s) => Some(s),
-      _ => None,
+  pub fn lexeme(&self) -> String {
+    match &self.kind {
+      TT::Number(n) => n.to_string(),
+      TT::String(s) => format!("\"{s}\""),
+      TT::Identifier(s) => s.clone(),
+      _ => self.kind.as_str().to_string(),
     }
   }
 }
@@ -107,5 +101,55 @@ impl TokenType {
       "while" => Self::While,
       _ => Self::Identifier(s),
     }
+  }
+
+  fn as_str(&self) -> &str {
+    match self {
+      TT::LeftParen => "(",
+      TT::RightParen => ")",
+      TT::LeftBrace => "{",
+      TT::RightBrace => "}",
+      TT::Comma => ",",
+      TT::Dot => ".",
+      TT::Minus => "-",
+      TT::Plus => "+",
+      TT::Semicolon => ";",
+      TT::Slash => "/",
+      TT::Star => "*",
+      TT::Bang => "!",
+      TT::BangEqual => "!=",
+      TT::Equal => "=",
+      TT::EqualEqual => "==",
+      TT::Greater => ">",
+      TT::GreaterEqual => ">=",
+      TT::Less => "<",
+      TT::LessEqual => "<=>",
+      TT::Identifier(s) => &s,
+      TT::String(s) => &s,
+      TT::Number(_) => "__SOME NUMBER__", // lol what
+      TT::And => "and",
+      TT::Class => "class",
+      TT::Else => "else",
+      TT::False => "false",
+      TT::Fun => "fun",
+      TT::For => "for",
+      TT::If => "if",
+      TT::Nil => "nil",
+      TT::Or => "or",
+      TT::Print => "print",
+      TT::Return => "return",
+      TT::Super => "super",
+      TT::This => "this",
+      TT::True => "true",
+      TT::Var => "var",
+      TT::While => "while",
+      TT::EOF => "",
+    }
+  }
+}
+
+impl std::fmt::Display for TokenType {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    write!(f, "{}", self.as_str())
   }
 }

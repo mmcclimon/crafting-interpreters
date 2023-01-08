@@ -28,9 +28,7 @@ impl Scanner {
       self.scan_token();
     }
 
-    self
-      .tokens
-      .push(Token::new(TokenType::EOF, "".into(), self.line));
+    self.tokens.push(Token::new(TokenType::EOF, self.line));
 
     &self.tokens
   }
@@ -155,9 +153,7 @@ impl Scanner {
   }
 
   fn add_token(&mut self, kind: TokenType) {
-    self
-      .tokens
-      .push(Token::new(kind, self.current_string(), self.line));
+    self.tokens.push(Token::new(kind, self.line));
   }
 
   fn read_string(&mut self) {
