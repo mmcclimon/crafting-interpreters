@@ -1,13 +1,9 @@
-pub mod errors;
-pub mod scanner;
-pub mod token;
-
 use std::fs::File;
 use std::io::prelude::*;
 use std::process;
 
-use crate::errors::Result;
-use crate::scanner::Scanner;
+use lox::errors::{self, Result};
+use lox::scanner::Scanner;
 
 fn main() -> Result<()> {
   let args = std::env::args().skip(1).collect::<Vec<_>>();
