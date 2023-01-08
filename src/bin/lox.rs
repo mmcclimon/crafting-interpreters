@@ -3,7 +3,9 @@ use std::io::prelude::*;
 use std::process;
 
 use lox::errors::{self, Result};
+use lox::parser::Parser;
 use lox::scanner::Scanner;
+use lox::tools::ast_printer;
 
 fn main() -> Result<()> {
   let args = std::env::args().skip(1).collect::<Vec<_>>();
@@ -60,9 +62,14 @@ fn run_prompt() -> Result<()> {
 
 // returns hadError, effectively
 fn run(source: String) {
-  let mut scanner = Scanner::new(source);
+  let scanner = Scanner::new(source);
 
-  for token in scanner.scan_tokens() {
-    println!("{token}");
+  let parser = Parser::new(scanner.into_tokens());
+  let expr = parser.parse();
+
+  if errors::had_error() {
+    return;
   }
+
+  ast_printer::print_ast(expr);
 }

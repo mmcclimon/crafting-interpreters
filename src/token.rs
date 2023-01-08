@@ -1,6 +1,6 @@
 type TT = TokenType;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
   // single-char tokens
   LeftParen,
@@ -52,9 +52,9 @@ pub enum TokenType {
 }
 
 #[allow(unused)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
-  kind: TokenType,
+  pub kind: TokenType,
   line: usize,
 }
 
@@ -70,6 +70,11 @@ impl Token {
       TT::Identifier(s) => s.clone(),
       _ => self.kind.as_str().to_string(),
     }
+  }
+
+  pub fn kind_matches(&self, other: &TokenType) -> bool {
+    use std::mem::discriminant;
+    discriminant(&self.kind) == discriminant(other)
   }
 }
 

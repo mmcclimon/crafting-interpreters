@@ -33,6 +33,14 @@ impl Scanner {
     &self.tokens
   }
 
+  pub fn into_tokens(mut self) -> Vec<Token> {
+    if self.tokens.len() == 0 {
+      self.scan_tokens();
+    }
+
+    self.tokens
+  }
+
   fn is_at_end(&self) -> bool {
     self.current >= self.source.len()
   }
