@@ -1,21 +1,15 @@
-use lox::expr::Expr;
+use lox::expr::{Expr, Literal};
 use lox::token::{Token, TokenType as TT};
 
 fn main() {
   let e = Box::new(Expr::Binary(
     Box::new(Expr::Unary(
       Token::new(TT::Minus, "-".into(), 1),
-      Box::new(Expr::Literal(Token::new(
-        TT::Number(123.0),
-        "123".into(),
-        1,
-      ))),
+      Box::new(Expr::Literal(Literal::Number(123.0))),
     )),
     Token::new(TT::Star, "*".into(), 1),
-    Box::new(Expr::Grouping(Box::new(Expr::Literal(Token::new(
-      TT::Number(45.67),
-      "45.67".into(),
-      1,
+    Box::new(Expr::Grouping(Box::new(Expr::Literal(Literal::Number(
+      45.67,
     ))))),
   ));
 
@@ -27,15 +21,7 @@ fn to_string(expr: Box<Expr>) -> String {
     Expr::Binary(left, op, right) => parenthesize(&op.lexeme, vec![left, right]),
     Expr::Grouping(e) => parenthesize("group", vec![e]),
     Expr::Unary(op, right) => parenthesize(&op.lexeme, vec![right]),
-    Expr::Literal(val) => {
-      if let Some(string) = val.string_value() {
-        string.into()
-      } else if let Some(n) = val.numeric_value() {
-        format!("{n}")
-      } else {
-        unreachable!("bogus literal");
-      }
-    },
+    Expr::Literal(val) => format!("{val}"),
   }
 }
 
