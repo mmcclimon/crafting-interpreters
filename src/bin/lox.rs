@@ -29,9 +29,17 @@ fn run_file(path: &str) -> Result<()> {
   let mut contents = String::new();
   file.read_to_string(&mut contents)?;
 
-  run(contents);
+  let res = run(contents);
 
-  if errors::had_error() {
+  // this smells
+  let mut errored = errors::had_error();
+
+  if let Err(e) = res {
+    eprintln!("{e}");
+    errored = true;
+  }
+
+  if errored {
     process::exit(65);
   }
 
@@ -53,7 +61,12 @@ fn run_prompt() -> Result<()> {
       break;
     }
 
-    run(line);
+    let res = run(line);
+
+    if let Err(e) = res {
+      eprintln!("{e}")
+    }
+
     errors::clear_error();
   }
 
@@ -61,15 +74,12 @@ fn run_prompt() -> Result<()> {
 }
 
 // returns hadError, effectively
-fn run(source: String) {
+fn run(source: String) -> Result<()> {
   let scanner = Scanner::new(source);
 
-  let parser = Parser::new(scanner.into_tokens());
-  let expr = parser.parse();
-
-  if errors::had_error() {
-    return;
-  }
+  let parser = Parser::new(scanner.into_tokens()?);
+  let expr = parser.parse()?;
 
   ast_printer::print_ast(expr);
+  Ok(())
 }

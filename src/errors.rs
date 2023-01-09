@@ -3,6 +3,8 @@ use std::fmt;
 use std::io::Error as IoError;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use crate::token::{Token, TokenType};
+
 // These are the two functions defined in the book. I'm not sure I'll keep using
 // them, but let's do, for the time being.
 pub static HAD_ERROR: AtomicBool = AtomicBool::new(false);
@@ -30,6 +32,8 @@ pub fn clear_error() {
 #[derive(Debug)]
 pub enum Error {
   Io(IoError),
+  Scan(usize, String),
+  Parse(Token, String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -46,6 +50,19 @@ impl fmt::Display for Error {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     match self {
       Error::Io(err) => write!(f, "{}", err),
+      Error::Scan(line, msg) => write!(f, "[line {line}] Scan error: {msg}"),
+      Error::Parse(token, msg) => {
+        if token.kind == TokenType::EOF {
+          write!(f, "[line {}] Error at end: {msg}", token.line)
+        } else {
+          write!(
+            f,
+            "[line {}] Error at {}: {msg}",
+            token.line,
+            token.lexeme()
+          )
+        }
+      },
     }
   }
 }

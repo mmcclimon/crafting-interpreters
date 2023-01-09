@@ -1,4 +1,4 @@
-use crate::errors;
+use crate::errors::{self, Error, Result};
 use crate::token::{Token, TokenType};
 
 #[derive(Debug)]
@@ -22,30 +22,30 @@ impl Scanner {
   }
 
   // really this should return an iterator or something, but hey
-  pub fn scan_tokens(&mut self) -> &Vec<Token> {
+  pub fn scan_tokens(&mut self) -> Result<&Vec<Token>> {
     while !self.is_at_end() {
       self.start = self.current;
-      self.scan_token();
+      self.scan_token()?;
     }
 
     self.tokens.push(Token::new(TokenType::EOF, self.line));
 
-    &self.tokens
+    Ok(&self.tokens)
   }
 
-  pub fn into_tokens(mut self) -> Vec<Token> {
+  pub fn into_tokens(mut self) -> Result<Vec<Token>> {
     if self.tokens.len() == 0 {
-      self.scan_tokens();
+      self.scan_tokens()?;
     }
 
-    self.tokens
+    Ok(self.tokens)
   }
 
   fn is_at_end(&self) -> bool {
     self.current >= self.source.len()
   }
 
-  fn scan_token(&mut self) {
+  fn scan_token(&mut self) -> Result<()> {
     let c = self.advance();
 
     use TokenType as TT;
@@ -115,14 +115,16 @@ impl Scanner {
       },
 
       // string and numeric literals
-      '"' => self.read_string(),
+      '"' => self.read_string()?,
       c if c.is_ascii_digit() => self.read_number(),
 
       // identifiers and keywords
       c if c.is_ascii_alphabetic() || c == '_' => self.read_identifier(),
 
       _ => errors::error(self.line, &format!("unexpected character {c}")),
-    }
+    };
+
+    Ok(())
   }
 
   fn advance(&mut self) -> char {
@@ -164,7 +166,7 @@ impl Scanner {
     self.tokens.push(Token::new(kind, self.line));
   }
 
-  fn read_string(&mut self) {
+  fn read_string(&mut self) -> Result<()> {
     while self.peek() != '"' && !self.is_at_end() {
       if self.peek() == '\n' {
         self.line += 1;
@@ -174,7 +176,7 @@ impl Scanner {
     }
 
     if self.is_at_end() {
-      panic!("unterminated string");
+      return Err(Error::Scan(self.line, "unterminated string".into()));
     }
 
     self.advance(); // closing quote
@@ -183,6 +185,7 @@ impl Scanner {
       .collect();
 
     self.add_token(TokenType::String(val));
+    Ok(())
   }
 
   fn read_number(&mut self) {

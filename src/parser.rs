@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 
+use crate::errors::{Error, Result};
 use crate::expr::{Expr, Literal};
 use crate::token::{Token, TokenType as TT};
 
@@ -17,28 +18,28 @@ impl Parser {
     }
   }
 
-  pub fn parse(&self) -> Box<Expr> {
+  pub fn parse(&self) -> Result<Box<Expr>> {
     self.expression()
   }
 
-  fn expression(&self) -> Box<Expr> {
+  fn expression(&self) -> Result<Box<Expr>> {
     self.equality()
   }
 
-  fn equality(&self) -> Box<Expr> {
-    let mut expr = self.comparison();
+  fn equality(&self) -> Result<Box<Expr>> {
+    let mut expr = self.comparison()?;
 
     while self.next_matches(&[TT::BangEqual, TT::EqualEqual]) {
       let op = self.previous().unwrap();
-      let right = self.comparison();
+      let right = self.comparison()?;
       expr = Box::new(Expr::Binary(expr, op.clone(), right));
     }
 
-    expr
+    Ok(expr)
   }
 
-  fn comparison(&self) -> Box<Expr> {
-    let mut expr = self.term();
+  fn comparison(&self) -> Result<Box<Expr>> {
+    let mut expr = self.term()?;
 
     while self.next_matches(&[
       TT::Greater,
@@ -47,49 +48,49 @@ impl Parser {
       TT::LessEqual,
     ]) {
       let op = self.previous().unwrap();
-      let right = self.term();
+      let right = self.term()?;
       expr = Box::new(Expr::Binary(expr, op.clone(), right));
     }
 
-    expr
+    Ok(expr)
   }
 
-  fn term(&self) -> Box<Expr> {
-    let mut expr = self.factor();
+  fn term(&self) -> Result<Box<Expr>> {
+    let mut expr = self.factor()?;
 
     while self.next_matches(&[TT::Plus, TT::Minus]) {
       let op = self.previous().unwrap();
-      let right = self.factor();
+      let right = self.factor()?;
       expr = Box::new(Expr::Binary(expr, op.clone(), right));
     }
 
-    expr
+    Ok(expr)
   }
 
-  fn factor(&self) -> Box<Expr> {
-    let mut expr = self.unary();
+  fn factor(&self) -> Result<Box<Expr>> {
+    let mut expr = self.unary()?;
 
     while self.next_matches(&[TT::Slash, TT::Star]) {
       let op = self.previous().unwrap();
-      let right = self.unary();
+      let right = self.unary()?;
       expr = Box::new(Expr::Binary(expr, op.clone(), right));
     }
 
-    expr
+    Ok(expr)
   }
 
-  fn unary(&self) -> Box<Expr> {
+  fn unary(&self) -> Result<Box<Expr>> {
     if self.next_matches(&[TT::Bang, TT::Minus]) {
       let op = self.previous().unwrap();
-      let right = self.unary();
-      Box::new(Expr::Unary(op.clone(), right))
+      let right = self.unary()?;
+      Ok(Box::new(Expr::Unary(op.clone(), right)))
     } else {
       self.primary()
     }
   }
 
   // this sucks
-  fn primary(&self) -> Box<Expr> {
+  fn primary(&self) -> Result<Box<Expr>> {
     let next = self.peek().expect("no token to parse in primary()");
 
     let expr = match next.kind {
@@ -100,16 +101,16 @@ impl Parser {
       TT::String(ref s) => Expr::Literal(Literal::String(s.clone())),
       TT::LeftParen => {
         self.advance();
-        let expr = self.expression();
-        self.consume(TT::RightParen, "Expect ') after expression.");
+        let expr = self.expression()?;
+        self.consume(TT::RightParen, "Expect ') after expression.")?;
         self.rewind(); // silly
         Expr::Grouping(expr)
       },
-      _ => panic!("expect expression"),
+      _ => return Err(Error::Parse(next.clone(), "expect expression".into())),
     };
 
     self.advance();
-    Box::new(expr)
+    Ok(Box::new(expr))
   }
 
   // helpers
@@ -156,15 +157,16 @@ impl Parser {
     *cur -= 1;
   }
 
-  fn consume(&self, kind: TT, err: &str) {
+  fn consume(&self, kind: TT, err: &str) -> Result<()> {
     if self.check(&kind) {
       self.advance();
-      return;
+      Ok(())
+    } else {
+      Err(Error::Parse(
+        self.previous().unwrap().clone(),
+        format!("{err}"),
+      ))
     }
-
-    // Obviously we'll replace this with something better when I get to a
-    // stopping point.
-    panic!("parse error: {err}")
   }
 
   #[allow(unused)]
