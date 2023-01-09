@@ -34,6 +34,7 @@ pub enum Error {
   Io(IoError),
   Scan(usize, String),
   Parse(Token, String),
+  Runtime(String), // sucks
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -63,6 +64,7 @@ impl fmt::Display for Error {
           )
         }
       },
+      Error::Runtime(s) => write!(f, "{}", s),
     }
   }
 }

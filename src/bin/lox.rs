@@ -3,8 +3,7 @@ use std::io::prelude::*;
 use std::process;
 
 use lox::errors;
-use lox::tools::ast_printer;
-use lox::{Parser, Result, Scanner};
+use lox::{Interpreter, Parser, Result, Scanner};
 
 fn main() -> Result<()> {
   let args = std::env::args().skip(1).collect::<Vec<_>>();
@@ -75,10 +74,12 @@ fn run_prompt() -> Result<()> {
 // returns hadError, effectively
 fn run(source: String) -> Result<()> {
   let scanner = Scanner::new(source);
-
   let parser = Parser::new(scanner.into_tokens()?);
+  let interpreter = Interpreter {};
+
   let expr = parser.parse()?;
 
-  ast_printer::print_ast(expr);
+  interpreter.interpret(expr)?;
+
   Ok(())
 }
