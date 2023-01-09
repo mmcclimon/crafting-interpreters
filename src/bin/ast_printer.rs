@@ -1,6 +1,6 @@
 use lox::expr::{Expr, Literal};
-use lox::token::{Token, TokenType as TT};
 use lox::tools::ast_printer;
+use lox::{Token, TokenType as TT};
 
 fn main() {
   let e = Box::new(Expr::Binary(

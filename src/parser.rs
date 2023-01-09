@@ -1,8 +1,7 @@
 use std::cell::RefCell;
 
-use crate::errors::{Error, Result};
 use crate::expr::{Expr, Literal};
-use crate::token::{Token, TokenType as TT};
+use crate::{Error, Result, Token, TokenType as TT};
 
 #[derive(Debug)]
 pub struct Parser {

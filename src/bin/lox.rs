@@ -2,10 +2,9 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::process;
 
-use lox::errors::{self, Result};
-use lox::parser::Parser;
-use lox::scanner::Scanner;
+use lox::errors;
 use lox::tools::ast_printer;
+use lox::{Parser, Result, Scanner};
 
 fn main() -> Result<()> {
   let args = std::env::args().skip(1).collect::<Vec<_>>();

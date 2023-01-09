@@ -1,4 +1,4 @@
-use crate::token::Token;
+use crate::Token;
 
 // This might be totally bananas, but we'll see.
 

@@ -3,7 +3,7 @@ use std::fmt;
 use std::io::Error as IoError;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::token::{Token, TokenType};
+use crate::{Token, TokenType};
 
 // These are the two functions defined in the book. I'm not sure I'll keep using
 // them, but let's do, for the time being.

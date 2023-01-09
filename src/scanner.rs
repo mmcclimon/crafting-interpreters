@@ -1,5 +1,5 @@
-use crate::errors::{self, Error, Result};
-use crate::token::{Token, TokenType};
+use crate::errors;
+use crate::{Error, Result, Token, TokenType};
 
 #[derive(Debug)]
 pub struct Scanner {
