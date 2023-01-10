@@ -34,7 +34,23 @@ pub enum Error {
   Io(IoError),
   Scan(usize, String),
   Parse(Token, String),
-  Runtime(String), // sucks
+  Runtime(Token, String),
+  TryFrom(String),
+}
+
+impl Error {
+  fn line_display(&self) -> String {
+    match self {
+      Error::Parse(token, msg) | Error::Runtime(token, msg) => {
+        if token.kind == TokenType::EOF {
+          format!("[line {}] Error at end: {msg}", token.line)
+        } else {
+          format!("[line {}] Error at {}: {msg}", token.line, token.lexeme())
+        }
+      },
+      _ => unimplemented!(),
+    }
+  }
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -52,19 +68,9 @@ impl fmt::Display for Error {
     match self {
       Error::Io(err) => write!(f, "{}", err),
       Error::Scan(line, msg) => write!(f, "[line {line}] Scan error: {msg}"),
-      Error::Parse(token, msg) => {
-        if token.kind == TokenType::EOF {
-          write!(f, "[line {}] Error at end: {msg}", token.line)
-        } else {
-          write!(
-            f,
-            "[line {}] Error at {}: {msg}",
-            token.line,
-            token.lexeme()
-          )
-        }
-      },
-      Error::Runtime(s) => write!(f, "{}", s),
+      Error::Parse(_, _) => write!(f, "{}", self.line_display()),
+      Error::Runtime(_, _) => write!(f, "{}", self.line_display()),
+      Error::TryFrom(err) => write!(f, "{}", err),
     }
   }
 }
