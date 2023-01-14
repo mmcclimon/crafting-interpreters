@@ -148,7 +148,7 @@ impl TokenType {
       TT::True => "true",
       TT::Var => "var",
       TT::While => "while",
-      TT::EOF => "",
+      TT::EOF => "eof",
     }
   }
 }

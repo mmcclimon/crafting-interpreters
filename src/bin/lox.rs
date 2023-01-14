@@ -74,10 +74,18 @@ fn run_prompt() -> Result<()> {
 // returns hadError, effectively
 fn run(source: String) -> Result<()> {
   let scanner = Scanner::new(source);
-  let parser = Parser::new(scanner.into_tokens()?);
+  let mut parser = Parser::new(scanner.into_tokens()?);
   let interpreter = Interpreter {};
 
-  let statements = parser.parse()?;
+  let statements = parser.parse();
+
+  if parser.has_errors() {
+    for err in parser.errors {
+      eprintln!("{err}")
+    }
+
+    return Ok(());
+  }
 
   interpreter.interpret(statements)?;
 

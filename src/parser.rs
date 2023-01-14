@@ -8,6 +8,7 @@ use crate::{Error, Result, Token, TokenType as TT};
 pub struct Parser {
   tokens: Vec<Token>,
   current: RefCell<usize>,
+  pub errors: Vec<Error>,
 }
 
 impl Parser {
@@ -15,16 +16,40 @@ impl Parser {
     Parser {
       tokens,
       current: RefCell::new(0),
+      errors: vec![],
     }
   }
 
-  pub fn parse(&self) -> Result<Vec<Stmt>> {
+  pub fn has_errors(&self) -> bool {
+    !self.errors.is_empty()
+  }
+
+  pub fn parse(&mut self) -> Vec<Stmt> {
     let mut statements = vec![];
+
     while !self.is_at_end() {
-      statements.push(self.statement()?);
+      let stmt = self.declaration();
+      if let Ok(stmt) = stmt {
+        statements.push(stmt);
+      } else {
+        self.errors.push(stmt.unwrap_err());
+        self.synchronize();
+      }
     }
 
-    Ok(statements)
+    statements
+  }
+
+  fn declaration(&self) -> Result<Stmt> {
+    if self.next_matches(&[TT::Var]) {
+      self.var_declaration()
+    } else {
+      self.statement()
+    }
+  }
+
+  fn var_declaration(&self) -> Result<Stmt> {
+    todo!("declarations")
   }
 
   fn statement(&self) -> Result<Stmt> {
@@ -131,11 +156,10 @@ impl Parser {
         self.rewind(); // silly
         Expr::Grouping(expr)
       },
-      TT::EOF => Expr::Literal(Literal::Nil),
       _ => {
         return Err(Error::Parse(
           next.clone(),
-          format!("expect expression, got {:?}", next),
+          format!("expect expression, got {}", next.kind),
         ))
       },
     };
@@ -146,7 +170,8 @@ impl Parser {
 
   // helpers
   fn is_at_end(&self) -> bool {
-    self.peek().unwrap().kind_matches(&TT::EOF)
+    let next = self.peek();
+    next.is_none() || next.unwrap().kind_matches(&TT::EOF)
   }
 
   fn next_matches(&self, kinds: &[TT]) -> bool {
@@ -200,7 +225,6 @@ impl Parser {
     }
   }
 
-  #[allow(unused)]
   fn synchronize(&self) {
     self.advance();
     while !self.is_at_end() {
