@@ -42,19 +42,24 @@ impl Interpreter {
     Ok(())
   }
 
-  fn eval_expr(&self, expr: Box<Expr>) -> Result<LoxValue> {
+  fn eval_expr(&mut self, expr: Box<Expr>) -> Result<LoxValue> {
     let val = match *expr {
       Expr::Literal(val) => val.into(),
       Expr::Grouping(e) => self.eval_expr(e)?,
       Expr::Unary(op, right) => self.eval_unary_expr(op, right)?,
       Expr::Binary(left, op, right) => self.eval_binary_expr(left, op, right)?,
       Expr::Variable(ref token) => self.env.get(token)?,
+      Expr::Assign(token, expr) => {
+        let value = self.eval_expr(expr)?;
+        self.env.assign(&token, value.clone())?;
+        value
+      },
     };
 
     Ok(val)
   }
 
-  fn eval_unary_expr(&self, op: Token, right: Box<Expr>) -> Result<LoxValue> {
+  fn eval_unary_expr(&mut self, op: Token, right: Box<Expr>) -> Result<LoxValue> {
     let right = self.eval_expr(right)?;
 
     match op.kind {
@@ -74,7 +79,7 @@ impl Interpreter {
   }
 
   fn eval_binary_expr(
-    &self,
+    &mut self,
     left: Box<Expr>,
     op: Token,
     right: Box<Expr>,

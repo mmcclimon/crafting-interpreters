@@ -87,7 +87,27 @@ impl Parser {
   }
 
   fn expression(&self) -> Result<Box<Expr>> {
-    self.equality()
+    self.assignment()
+  }
+
+  fn assignment(&self) -> Result<Box<Expr>> {
+    let expr = self.equality()?;
+
+    if self.next_matches(&[TT::Equal]) {
+      let equals = self.previous().unwrap();
+      let value = self.assignment()?;
+
+      if let Expr::Variable(tok) = *expr {
+        Ok(Box::new(Expr::Assign(tok, value)))
+      } else {
+        Err(Error::Parse(
+          equals.clone(),
+          format!("invalid assignment target: {}", equals),
+        ))
+      }
+    } else {
+      Ok(expr)
+    }
   }
 
   fn equality(&self) -> Result<Box<Expr>> {

@@ -12,6 +12,7 @@ pub mod ast_printer {
       Expr::Unary(op, right) => parenthesize(&op.lexeme(), vec![right]),
       Expr::Literal(val) => format!("{val}"),
       Expr::Variable(name) => format!("var {name}"),
+      Expr::Assign(_tok, _expr) => todo!(),
     }
   }
 

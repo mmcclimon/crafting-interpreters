@@ -12,10 +12,11 @@ pub enum Literal {
 
 #[derive(Debug)]
 pub enum Expr {
+  Assign(Token, Box<Expr>),
   Binary(Box<Expr>, Token, Box<Expr>),
   Grouping(Box<Expr>),
-  Unary(Token, Box<Expr>),
   Literal(Literal),
+  Unary(Token, Box<Expr>),
   Variable(Token),
 }
 
