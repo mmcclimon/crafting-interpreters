@@ -67,17 +67,36 @@ impl Parser {
   }
 
   fn statement(&self) -> Result<Stmt> {
-    if self.next_matches(&[TT::Print]) {
-      return self.print_statement();
-    }
+    let next = self.peek().expect("no token to parse in statement()");
+    self.advance(); // hrm
 
-    self.expression_statement()
+    let stmt = match next.kind {
+      TT::Print => self.print_statement()?,
+      TT::LeftBrace => Stmt::Block(self.block()?),
+      _ => {
+        self.rewind(); // don't actually want that advance after all
+        self.expression_statement()?
+      },
+    };
+
+    Ok(stmt)
   }
 
   fn print_statement(&self) -> Result<Stmt> {
     let value = self.expression()?;
     self.consume(TT::Semicolon, "Expect ';' after value.")?;
     Ok(Stmt::Print(value))
+  }
+
+  fn block(&self) -> Result<Vec<Stmt>> {
+    let mut statements = vec![];
+
+    while !self.check(&TT::RightBrace) && !self.is_at_end() {
+      statements.push(self.declaration()?);
+    }
+
+    self.consume(TT::RightBrace, "Expect '}' after block.")?;
+    Ok(statements)
   }
 
   fn expression_statement(&self) -> Result<Stmt> {

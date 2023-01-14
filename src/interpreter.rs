@@ -26,6 +26,19 @@ impl Interpreter {
 
   fn execute(&mut self, stmt: Stmt) -> Result<()> {
     match stmt {
+      Stmt::Block(block) => {
+        self.env.push_scope();
+
+        // Possibly, I should do something to restore the scope if executing the
+        // statement fails, but in reality we're going to propogate that all the
+        // way up the stack and tear down anyway, so let's just not bother for
+        // now.
+        for statement in block {
+          self.execute(statement)?;
+        }
+
+        self.env.pop_scope();
+      },
       Stmt::Expression(e) => {
         self.eval_expr(e)?;
       },
