@@ -77,9 +77,9 @@ fn run(source: String) -> Result<()> {
   let parser = Parser::new(scanner.into_tokens()?);
   let interpreter = Interpreter {};
 
-  let expr = parser.parse()?;
+  let statements = parser.parse()?;
 
-  interpreter.interpret(expr)?;
+  interpreter.interpret(statements)?;
 
   Ok(())
 }

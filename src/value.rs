@@ -64,3 +64,14 @@ impl TryFrom<LoxValue> for f64 {
     }
   }
 }
+
+impl std::fmt::Display for LoxValue {
+  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    match self {
+      LoxValue::Number(n) => write!(f, "{}", n),
+      LoxValue::String(s) => write!(f, "{}", s),
+      LoxValue::Boolean(b) => write!(f, "{}", b),
+      LoxValue::Nil => write!(f, "nil"),
+    }
+  }
+}

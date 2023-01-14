@@ -1,30 +1,46 @@
 use crate::expr::Expr;
+use crate::stmt::Stmt;
 use crate::value::LoxValue;
 use crate::{Error, Result, Token, TokenType as TT};
 
 pub struct Interpreter {}
 
 impl Interpreter {
-  pub fn interpret(&self, expr: Box<Expr>) -> Result<LoxValue> {
-    let val = self.eval(expr)?;
-    println!("{:?}", val);
+  pub fn interpret(&self, statements: Vec<Stmt>) -> Result<()> {
+    for stmt in statements {
+      self.execute(stmt)?;
+    }
 
-    Ok(val)
+    Ok(())
   }
 
-  fn eval(&self, expr: Box<Expr>) -> Result<LoxValue> {
+  fn execute(&self, stmt: Stmt) -> Result<()> {
+    match stmt {
+      Stmt::Expression(e) => {
+        self.eval_expr(e)?;
+      },
+      Stmt::Print(e) => {
+        let val = self.eval_expr(e)?;
+        println!("{}", val);
+      },
+    };
+
+    Ok(())
+  }
+
+  fn eval_expr(&self, expr: Box<Expr>) -> Result<LoxValue> {
     let val = match *expr {
       Expr::Literal(val) => val.into(),
-      Expr::Grouping(e) => self.eval(e)?,
-      Expr::Unary(op, right) => self.eval_unary(op, right)?,
-      Expr::Binary(left, op, right) => self.eval_binary(left, op, right)?,
+      Expr::Grouping(e) => self.eval_expr(e)?,
+      Expr::Unary(op, right) => self.eval_unary_expr(op, right)?,
+      Expr::Binary(left, op, right) => self.eval_binary_expr(left, op, right)?,
     };
 
     Ok(val)
   }
 
-  fn eval_unary(&self, op: Token, right: Box<Expr>) -> Result<LoxValue> {
-    let right = self.eval(right)?;
+  fn eval_unary_expr(&self, op: Token, right: Box<Expr>) -> Result<LoxValue> {
+    let right = self.eval_expr(right)?;
 
     match op.kind {
       TT::Bang => Ok(LoxValue::Boolean(!right.is_truthy())),
@@ -42,7 +58,7 @@ impl Interpreter {
     }
   }
 
-  fn eval_binary(
+  fn eval_binary_expr(
     &self,
     left: Box<Expr>,
     op: Token,
@@ -50,8 +66,8 @@ impl Interpreter {
   ) -> Result<LoxValue> {
     use LoxValue as LV;
 
-    let left = self.eval(left)?;
-    let right = self.eval(right)?;
+    let left = self.eval_expr(left)?;
+    let right = self.eval_expr(right)?;
 
     let val = match op.kind {
       // can take any two types

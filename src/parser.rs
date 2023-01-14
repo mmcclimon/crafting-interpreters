@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 
 use crate::expr::{Expr, Literal};
+use crate::stmt::Stmt;
 use crate::{Error, Result, Token, TokenType as TT};
 
 #[derive(Debug)]
@@ -17,8 +18,33 @@ impl Parser {
     }
   }
 
-  pub fn parse(&self) -> Result<Box<Expr>> {
-    self.expression()
+  pub fn parse(&self) -> Result<Vec<Stmt>> {
+    let mut statements = vec![];
+    while !self.is_at_end() {
+      statements.push(self.statement()?);
+    }
+
+    Ok(statements)
+  }
+
+  fn statement(&self) -> Result<Stmt> {
+    if self.next_matches(&[TT::Print]) {
+      return self.print_statement();
+    }
+
+    self.expression_statement()
+  }
+
+  fn print_statement(&self) -> Result<Stmt> {
+    let value = self.expression()?;
+    self.consume(TT::Semicolon, "Expect ';' after value.")?;
+    Ok(Stmt::Print(value))
+  }
+
+  fn expression_statement(&self) -> Result<Stmt> {
+    let value = self.expression()?;
+    self.consume(TT::Semicolon, "Expect ';' after value.")?;
+    Ok(Stmt::Expression(value))
   }
 
   fn expression(&self) -> Result<Box<Expr>> {
@@ -101,11 +127,17 @@ impl Parser {
       TT::LeftParen => {
         self.advance();
         let expr = self.expression()?;
-        self.consume(TT::RightParen, "Expect ') after expression.")?;
+        self.consume(TT::RightParen, "Expect ')' after expression.")?;
         self.rewind(); // silly
         Expr::Grouping(expr)
       },
-      _ => return Err(Error::Parse(next.clone(), "expect expression".into())),
+      TT::EOF => Expr::Literal(Literal::Nil),
+      _ => {
+        return Err(Error::Parse(
+          next.clone(),
+          format!("expect expression, got {:?}", next),
+        ))
+      },
     };
 
     self.advance();
@@ -114,7 +146,7 @@ impl Parser {
 
   // helpers
   fn is_at_end(&self) -> bool {
-    *self.current.borrow() >= self.tokens.len()
+    self.peek().unwrap().kind_matches(&TT::EOF)
   }
 
   fn next_matches(&self, kinds: &[TT]) -> bool {
