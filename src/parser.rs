@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use crate::expr::{Expr, Literal};
+use crate::expr::{self, Expr, Literal};
 use crate::stmt::Stmt;
 use crate::{Error, Result, Token, TokenType as TT};
 
@@ -53,7 +53,17 @@ impl Parser {
   }
 
   fn var_declaration(&self) -> Result<Stmt> {
-    todo!("declarations")
+    // this "_" smells here
+    let name = self.consume(TT::Identifier("_".into()), "Expect variable name")?;
+
+    let initializer = if self.next_matches(&[TT::Equal]) {
+      self.expression()?
+    } else {
+      expr::nil_expression()
+    };
+
+    self.consume(TT::Semicolon, "Expect ';' after variable declaration.")?;
+    Ok(Stmt::Var(name.lexeme(), initializer))
   }
 
   fn statement(&self) -> Result<Stmt> {
@@ -160,6 +170,7 @@ impl Parser {
         self.rewind(); // silly
         Expr::Grouping(expr)
       },
+      TT::Identifier(_) => Expr::Variable(next.clone()),
       _ => {
         return Err(Error::Parse(
           next.clone(),
@@ -217,10 +228,10 @@ impl Parser {
     *cur -= 1;
   }
 
-  fn consume(&self, kind: TT, err: &str) -> Result<()> {
+  fn consume(&self, kind: TT, err: &str) -> Result<Token> {
     if self.check(&kind) {
       self.advance();
-      Ok(())
+      Ok(self.previous().unwrap().clone())
     } else {
       Err(Error::Parse(
         self.previous().unwrap().clone(),

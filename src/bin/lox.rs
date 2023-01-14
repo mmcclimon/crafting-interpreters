@@ -49,7 +49,9 @@ fn run_prompt() -> Result<()> {
       break;
     }
 
-    run(line).ok();
+    if let Err(err) = run(line) {
+      eprintln!("{err}");
+    }
   }
 
   Ok(())
@@ -59,7 +61,7 @@ fn run_prompt() -> Result<()> {
 fn run(source: String) -> Result<()> {
   let scanner = Scanner::new(source);
   let mut parser = Parser::new(scanner.into_tokens()?);
-  let interpreter = Interpreter {};
+  let mut interpreter = Interpreter::new();
 
   let statements = parser.parse();
 
@@ -72,9 +74,6 @@ fn run(source: String) -> Result<()> {
 
       Err(Error::ParseFailed)
     },
-    Err(err) => {
-      eprintln!("{err}");
-      Err(err)
-    },
+    Err(err) => Err(err),
   }
 }

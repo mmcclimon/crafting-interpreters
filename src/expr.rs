@@ -15,14 +15,14 @@ pub enum Expr {
   Binary(Box<Expr>, Token, Box<Expr>),
   Grouping(Box<Expr>),
   Unary(Token, Box<Expr>),
-  // hrmmmmm
   Literal(Literal),
+  Variable(Token),
 }
 
 // I just want something to be able to stick in to get stuff to compile while
 // I'm working ont it
-pub fn nil_expression() -> Expr {
-  Expr::Literal(Literal::Nil)
+pub fn nil_expression() -> Box<Expr> {
+  Box::new(Expr::Literal(Literal::Nil))
 }
 
 impl std::fmt::Display for Literal {

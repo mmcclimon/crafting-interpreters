@@ -1,12 +1,22 @@
+use crate::environment::Environment;
 use crate::expr::Expr;
 use crate::stmt::Stmt;
 use crate::value::LoxValue;
 use crate::{Error, Result, Token, TokenType as TT};
 
-pub struct Interpreter {}
+#[derive(Debug)]
+pub struct Interpreter {
+  env: Environment,
+}
 
 impl Interpreter {
-  pub fn interpret(&self, statements: Vec<Stmt>) -> Result<()> {
+  pub fn new() -> Self {
+    Interpreter {
+      env: Environment::new(),
+    }
+  }
+
+  pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<()> {
     for stmt in statements {
       self.execute(stmt)?;
     }
@@ -14,7 +24,7 @@ impl Interpreter {
     Ok(())
   }
 
-  fn execute(&self, stmt: Stmt) -> Result<()> {
+  fn execute(&mut self, stmt: Stmt) -> Result<()> {
     match stmt {
       Stmt::Expression(e) => {
         self.eval_expr(e)?;
@@ -22,6 +32,10 @@ impl Interpreter {
       Stmt::Print(e) => {
         let val = self.eval_expr(e)?;
         println!("{}", val);
+      },
+      Stmt::Var(name, init) => {
+        let value = self.eval_expr(init)?;
+        self.env.define(name, value);
       },
     };
 
@@ -34,6 +48,7 @@ impl Interpreter {
       Expr::Grouping(e) => self.eval_expr(e)?,
       Expr::Unary(op, right) => self.eval_unary_expr(op, right)?,
       Expr::Binary(left, op, right) => self.eval_binary_expr(left, op, right)?,
+      Expr::Variable(ref token) => self.env.get(token)?,
     };
 
     Ok(val)

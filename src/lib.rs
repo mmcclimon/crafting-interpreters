@@ -1,3 +1,4 @@
+mod environment;
 pub mod errors;
 pub mod expr;
 pub mod interpreter;

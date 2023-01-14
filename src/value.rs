@@ -3,7 +3,7 @@ use crate::{Error, Result};
 
 // This is framework I suspect I will need, but am shoving in here for
 // expediency and I'll move it later.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LoxValue {
   Number(f64),
   String(String),
