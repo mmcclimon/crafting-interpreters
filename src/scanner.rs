@@ -1,4 +1,3 @@
-use crate::errors;
 use crate::{Error, Result, Token, TokenType};
 
 #[derive(Debug)]
@@ -121,7 +120,7 @@ impl Scanner {
       // identifiers and keywords
       c if c.is_ascii_alphabetic() || c == '_' => self.read_identifier(),
 
-      _ => errors::error(self.line, &format!("unexpected character {c}")),
+      _ => return Err(Error::Scan(self.line, format!("unexpected character {c}"))),
     };
 
     Ok(())

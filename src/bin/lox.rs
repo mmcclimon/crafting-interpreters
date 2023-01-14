@@ -2,8 +2,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::process;
 
-use lox::errors;
-use lox::{Interpreter, Parser, Result, Scanner};
+use lox::{Error, Interpreter, Parser, Result, Scanner};
 
 fn main() -> Result<()> {
   let args = std::env::args().skip(1).collect::<Vec<_>>();
@@ -27,17 +26,8 @@ fn run_file(path: &str) -> Result<()> {
   let mut contents = String::new();
   file.read_to_string(&mut contents)?;
 
-  let res = run(contents);
-
-  // this smells
-  let mut errored = errors::had_error();
-
-  if let Err(e) = res {
+  if let Err(e) = run(contents) {
     eprintln!("{e}");
-    errored = true;
-  }
-
-  if errored {
     process::exit(65);
   }
 
@@ -59,13 +49,7 @@ fn run_prompt() -> Result<()> {
       break;
     }
 
-    let res = run(line);
-
-    if let Err(e) = res {
-      eprintln!("{e}")
-    }
-
-    errors::clear_error();
+    run(line).ok();
   }
 
   Ok(())
@@ -79,15 +63,18 @@ fn run(source: String) -> Result<()> {
 
   let statements = parser.parse();
 
-  if parser.has_errors() {
-    for err in parser.errors {
-      eprintln!("{err}")
-    }
+  match statements {
+    Ok(stmts) => interpreter.interpret(stmts),
+    Err(Error::ParseFailed) => {
+      for err in parser.errors {
+        eprintln!("{err}")
+      }
 
-    return Ok(());
+      Err(Error::ParseFailed)
+    },
+    Err(err) => {
+      eprintln!("{err}");
+      Err(err)
+    },
   }
-
-  interpreter.interpret(statements)?;
-
-  Ok(())
 }

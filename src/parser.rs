@@ -24,7 +24,7 @@ impl Parser {
     !self.errors.is_empty()
   }
 
-  pub fn parse(&mut self) -> Vec<Stmt> {
+  pub fn parse(&mut self) -> Result<Vec<Stmt>> {
     let mut statements = vec![];
 
     while !self.is_at_end() {
@@ -37,7 +37,11 @@ impl Parser {
       }
     }
 
-    statements
+    if self.errors.is_empty() {
+      Ok(statements)
+    } else {
+      Err(Error::ParseFailed)
+    }
   }
 
   fn declaration(&self) -> Result<Stmt> {
