@@ -35,15 +35,7 @@ impl Interpreter {
       Stmt::Empty => (),
       Stmt::Block(block) => {
         self.env.push_scope();
-
-        // Possibly, I should do something to restore the scope if executing the
-        // statement fails, but in reality we're going to propogate that all the
-        // way up the stack and tear down anyway, so let's just not bother for
-        // now.
-        for statement in block {
-          self.execute(statement)?;
-        }
-
+        self.execute_block(block)?;
         self.env.pop_scope();
       },
       Stmt::Expression(e) => {
@@ -76,6 +68,18 @@ impl Interpreter {
         }
       },
     };
+
+    Ok(())
+  }
+
+  fn execute_block(&mut self, block: &Vec<Stmt>) -> Result<()> {
+    // Possibly, I should do something to restore the scope if executing the
+    // statement fails, but in reality we're going to propogate that all the
+    // way up the stack and tear down anyway, so let's just not bother for
+    // now.
+    for statement in block {
+      self.execute(statement)?;
+    }
 
     Ok(())
   }
