@@ -26,6 +26,7 @@ impl Interpreter {
 
   fn execute(&mut self, stmt: Stmt) -> Result<()> {
     match stmt {
+      Stmt::Empty => (),
       Stmt::Block(block) => {
         self.env.push_scope();
 
@@ -50,6 +51,15 @@ impl Interpreter {
         let value = self.eval_expr(init)?;
         self.env.define(name, value);
       },
+
+      // control flow
+      Stmt::If(cond, then_branch, else_branch) => {
+        if self.eval_expr(cond)?.is_truthy() {
+          self.execute(*then_branch)?;
+        } else {
+          self.execute(*else_branch)?;
+        }
+      },
     };
 
     Ok(())
@@ -66,6 +76,24 @@ impl Interpreter {
         let value = self.eval_expr(expr)?;
         self.env.assign(&token, value.clone())?;
         value
+      },
+      Expr::Logical(left, op, right) => {
+        let left_val = self.eval_expr(left)?;
+        let left_true = left_val.is_truthy();
+
+        if op.kind_matches(&TT::Or) {
+          if left_true {
+            left_val
+          } else {
+            self.eval_expr(right)?
+          }
+        } else {
+          if left_true {
+            self.eval_expr(right)?
+          } else {
+            left_val
+          }
+        }
       },
     };
 

@@ -13,6 +13,7 @@ pub mod ast_printer {
       Expr::Literal(val) => format!("{val}"),
       Expr::Variable(name) => format!("var {name}"),
       Expr::Assign(_tok, _expr) => todo!(),
+      Expr::Logical(_left, _op, _right) => todo!(),
     }
   }
 

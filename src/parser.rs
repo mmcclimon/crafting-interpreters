@@ -73,6 +73,7 @@ impl Parser {
     let stmt = match next.kind {
       TT::Print => self.print_statement()?,
       TT::LeftBrace => Stmt::Block(self.block()?),
+      TT::If => self.if_statement()?,
       _ => {
         self.rewind(); // don't actually want that advance after all
         self.expression_statement()?
@@ -86,6 +87,21 @@ impl Parser {
     let value = self.expression()?;
     self.consume(TT::Semicolon, "Expect ';' after value.")?;
     Ok(Stmt::Print(value))
+  }
+
+  fn if_statement(&self) -> Result<Stmt> {
+    self.consume(TT::LeftParen, "Expect '(' after 'if'.")?;
+    let cond = self.expression()?;
+    self.consume(TT::RightParen, "Expect ')' after if condition.")?;
+
+    let then_branch = self.statement()?;
+    let else_branch = if self.next_matches(&[TT::Else]) {
+      self.statement()?
+    } else {
+      Stmt::Empty
+    };
+
+    Ok(Stmt::If(cond, Box::new(then_branch), Box::new(else_branch)))
   }
 
   fn block(&self) -> Result<Vec<Stmt>> {
@@ -110,7 +126,7 @@ impl Parser {
   }
 
   fn assignment(&self) -> Result<Box<Expr>> {
-    let expr = self.equality()?;
+    let expr = self.or()?;
 
     if self.next_matches(&[TT::Equal]) {
       let equals = self.previous().unwrap();
@@ -127,6 +143,30 @@ impl Parser {
     } else {
       Ok(expr)
     }
+  }
+
+  fn or(&self) -> Result<Box<Expr>> {
+    let mut expr = self.and()?;
+
+    while self.next_matches(&[TT::Or]) {
+      let op = self.previous().unwrap();
+      let right = self.and()?;
+      expr = Box::new(Expr::Logical(expr, op.clone(), right));
+    }
+
+    Ok(expr)
+  }
+
+  fn and(&self) -> Result<Box<Expr>> {
+    let mut expr = self.equality()?;
+
+    while self.next_matches(&[TT::And]) {
+      let op = self.previous().unwrap();
+      let right = self.equality()?;
+      expr = Box::new(Expr::Logical(expr, op.clone(), right));
+    }
+
+    Ok(expr)
   }
 
   fn equality(&self) -> Result<Box<Expr>> {
