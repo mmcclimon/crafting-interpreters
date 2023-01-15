@@ -1,7 +1,7 @@
 mod callable;
 
 use crate::expr::Literal;
-use crate::{Error, Result};
+use crate::{Error, Interpreter, Result};
 pub use callable::Callable;
 
 // This is framework I suspect I will need, but am shoving in here for
@@ -15,7 +15,13 @@ pub enum LoxValue {
   Nil,
 }
 
+pub type Func = dyn Fn(&mut Interpreter, Vec<LoxValue>) -> Result<LoxValue>;
+
 impl LoxValue {
+  pub fn new_callable(name: String, arity: usize, func: Box<Func>) -> Self {
+    LoxValue::Function(Box::new(Callable::new(name, arity, func)))
+  }
+
   pub fn is_truthy(&self) -> bool {
     match self {
       Self::Nil => false,
@@ -89,7 +95,7 @@ impl std::fmt::Display for LoxValue {
       LoxValue::Number(n) => write!(f, "{}", n),
       LoxValue::String(s) => write!(f, "{}", s),
       LoxValue::Boolean(b) => write!(f, "{}", b),
-      LoxValue::Function(_) => write!(f, "[function object]"),
+      LoxValue::Function(c) => write!(f, "<function {}>", c.name),
       LoxValue::Nil => write!(f, "nil"),
     }
   }

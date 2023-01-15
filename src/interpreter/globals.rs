@@ -1,6 +1,6 @@
 use crate::environment::Environment;
 use crate::interpreter::Interpreter;
-use crate::value::{Callable, LoxValue};
+use crate::value::LoxValue;
 use crate::Result;
 
 pub fn install_in(env: &mut Environment) {
@@ -19,6 +19,5 @@ fn clock() -> LoxValue {
     Ok(secs)
   };
 
-  let callable = Callable::new(Box::new(func), 0);
-  LoxValue::Function(Box::new(callable))
+  LoxValue::new_callable("clock".into(), 0, Box::new(func))
 }

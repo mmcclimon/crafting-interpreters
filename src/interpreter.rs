@@ -49,6 +49,36 @@ impl Interpreter {
         let value = self.eval_expr(init)?;
         self.env.define(name, value);
       },
+      Stmt::Function(name, params, body) => {
+        // We have to clone here to appease the borrow checker, because I
+        // haven't structured things in such a way that it can tell the func
+        // won't outlive the lifetime of our environment.
+        let pclone = params.clone();
+        let bclone = body.clone();
+
+        let func =
+          move |interp: &mut Interpreter, args: Vec<LoxValue>| -> Result<LoxValue> {
+            interp.env.push_scope();
+
+            for (idx, param) in pclone.iter().enumerate() {
+              interp.env.define(
+                &param.lexeme(),
+                args.get(idx).expect("arity mistake").clone(),
+              );
+            }
+
+            interp.execute_block(&bclone)?;
+
+            interp.env.pop_scope();
+
+            Ok(LoxValue::Nil)
+          };
+
+        let callable =
+          LoxValue::new_callable(name.lexeme(), params.len(), Box::new(func));
+
+        self.env.define(&name.lexeme(), callable);
+      },
 
       // control flow
       Stmt::If(cond, then_branch, else_branch) => {

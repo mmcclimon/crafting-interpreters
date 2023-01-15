@@ -45,16 +45,43 @@ impl Parser {
   }
 
   fn declaration(&self) -> Result<Stmt> {
-    if self.next_matches(&[TT::Var]) {
-      self.var_declaration()
-    } else {
-      self.statement()
+    let next = self.peek().expect("no token to parse in declaration()");
+    self.advance();
+
+    match next.kind {
+      TT::Fun => self.function("function"),
+      TT::Var => self.var_declaration(),
+      _ => {
+        self.rewind();
+        self.statement()
+      },
     }
   }
 
+  fn function(&self, kind: &str) -> Result<Stmt> {
+    let name = self.consume_identifier(&format!("expect {kind} name"))?;
+
+    self.consume(TT::LeftParen, &format!("Expect '(' after {kind} name."))?;
+
+    let mut params = vec![];
+
+    if !self.check(&TT::RightParen) {
+      params.push(self.consume_identifier("expect param name")?);
+
+      while self.next_matches(&[TT::Comma]) {
+        params.push(self.consume_identifier("expect param name")?);
+      }
+    }
+
+    self.consume(TT::RightParen, "Expect ')' after parameter list.")?;
+    self.consume(TT::LeftBrace, &format!("Expect '{{' before {kind} body"))?;
+    let body = self.block()?;
+
+    Ok(Stmt::Function(name, params, body))
+  }
+
   fn var_declaration(&self) -> Result<Stmt> {
-    // this "_" smells here
-    let name = self.consume(TT::Identifier("_".into()), "Expect variable name")?;
+    let name = self.consume_identifier("Expect variable name")?;
 
     let initializer = if self.next_matches(&[TT::Equal]) {
       self.expression()?
@@ -409,6 +436,18 @@ impl Parser {
         self.previous().unwrap().clone(),
         format!("{err}"),
       ))
+    }
+  }
+
+  fn consume_identifier(&self, err: &str) -> Result<Token> {
+    if self.is_at_end() || !self.peek().unwrap().is_identifier() {
+      Err(Error::Parse(
+        self.previous().unwrap().clone(),
+        format!("{err}"),
+      ))
+    } else {
+      self.advance();
+      Ok(self.previous().unwrap().clone())
     }
   }
 

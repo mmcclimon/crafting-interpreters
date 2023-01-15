@@ -76,6 +76,13 @@ impl Token {
     use std::mem::discriminant;
     discriminant(&self.kind) == discriminant(other)
   }
+
+  pub fn is_identifier(&self) -> bool {
+    match self.kind {
+      TT::Identifier(_) => true,
+      _ => false,
+    }
+  }
 }
 
 impl std::fmt::Display for Token {
