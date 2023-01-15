@@ -99,9 +99,10 @@ impl Parser {
 
     let stmt = match next.kind {
       TT::Print => self.print_statement()?,
+      TT::Return => self.return_statement()?,
+      TT::While => self.while_statement()?,
       TT::LeftBrace => Stmt::Block(self.block()?),
       TT::If => self.if_statement()?,
-      TT::While => self.while_statement()?,
       TT::For => self.for_statement()?,
       _ => {
         self.rewind(); // don't actually want that advance after all
@@ -116,6 +117,19 @@ impl Parser {
     let value = self.expression()?;
     self.consume(TT::Semicolon, "Expect ';' after value.")?;
     Ok(Stmt::Print(value))
+  }
+
+  fn return_statement(&self) -> Result<Stmt> {
+    let keyword = self.previous().unwrap();
+    let value = if self.check(&TT::Semicolon) {
+      expr::nil_expression()
+    } else {
+      self.expression()?
+    };
+
+    self.consume(TT::Semicolon, "Expect ';' after return value.")?;
+
+    Ok(Stmt::Return(keyword.clone(), value))
   }
 
   fn if_statement(&self) -> Result<Stmt> {

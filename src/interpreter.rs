@@ -67,11 +67,15 @@ impl Interpreter {
               );
             }
 
-            interp.execute_block(&bclone)?;
+            let ret = match interp.execute_block(&bclone) {
+              Ok(()) => LoxValue::Nil,
+              Err(Error::Return(retval)) => retval,
+              Err(e) => return Err(e),
+            };
 
             interp.env.pop_scope();
 
-            Ok(LoxValue::Nil)
+            Ok(ret)
           };
 
         let callable =
@@ -96,6 +100,11 @@ impl Interpreter {
         while self.eval_expr(cond)?.is_truthy() {
           self.execute(body)?;
         }
+      },
+
+      Stmt::Return(_tok, expr) => {
+        let value = self.eval_expr(expr)?;
+        return Err(Error::Return(value));
       },
     };
 

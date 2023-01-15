@@ -9,6 +9,7 @@ pub enum Stmt {
   Function(Token, Vec<Token>, Vec<Stmt>),
   If(Box<Expr>, Box<Stmt>, Box<Stmt>),
   Print(Box<Expr>),
+  Return(Token, Box<Expr>),
   Var(String, Box<Expr>), // maybe instead, Option<Expr>
   While(Box<Expr>, Box<Stmt>),
 }

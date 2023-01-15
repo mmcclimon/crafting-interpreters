@@ -2,6 +2,7 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::io::Error as IoError;
 
+use crate::value::LoxValue;
 use crate::{Token, TokenType};
 
 // I have replaced the error handling in the book with more idiomatic rust.
@@ -12,6 +13,7 @@ pub enum Error {
   Scan(usize, String),
   Parse(Token, String),
   ParseFailed,
+  Return(LoxValue), // not a real error, but you dance with who brung you
   Runtime(Token, String),
   TryFrom(String),
 }
@@ -48,6 +50,7 @@ impl fmt::Display for Error {
       Error::Scan(line, msg) => write!(f, "[line {line}] Scan error: {msg}"),
       Error::Parse(_, _) => write!(f, "{}", self.line_display()),
       Error::ParseFailed => write!(f, "parse failed"),
+      Error::Return(_) => write!(f, "<return>, you should never see this!"),
       Error::Runtime(_, _) => write!(f, "{}", self.line_display()),
       Error::TryFrom(err) => write!(f, "{}", err),
     }
