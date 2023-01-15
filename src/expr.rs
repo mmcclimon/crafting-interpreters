@@ -2,7 +2,7 @@ use crate::Token;
 
 // This might be totally bananas, but we'll see.
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Literal {
   Number(f64),
   String(String),
@@ -10,7 +10,7 @@ pub enum Literal {
   Nil,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
   Assign(Token, Box<Expr>),
   Binary(Box<Expr>, Token, Box<Expr>),
@@ -25,6 +25,10 @@ pub enum Expr {
 // I'm working ont it
 pub fn nil_expression() -> Box<Expr> {
   Box::new(Expr::Literal(Literal::Nil))
+}
+
+pub fn bool_expression(which: bool) -> Box<Expr> {
+  Box::new(Expr::Literal(Literal::Boolean(which)))
 }
 
 impl std::fmt::Display for Literal {

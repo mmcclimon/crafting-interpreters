@@ -74,6 +74,8 @@ impl Parser {
       TT::Print => self.print_statement()?,
       TT::LeftBrace => Stmt::Block(self.block()?),
       TT::If => self.if_statement()?,
+      TT::While => self.while_statement()?,
+      TT::For => self.for_statement()?,
       _ => {
         self.rewind(); // don't actually want that advance after all
         self.expression_statement()?
@@ -102,6 +104,64 @@ impl Parser {
     };
 
     Ok(Stmt::If(cond, Box::new(then_branch), Box::new(else_branch)))
+  }
+
+  fn while_statement(&self) -> Result<Stmt> {
+    self.consume(TT::LeftParen, "Expect '(' after 'while'.")?;
+    let cond = self.expression()?;
+    self.consume(TT::RightParen, "Expect ')' after while condition.")?;
+
+    let body = self.statement()?;
+    Ok(Stmt::While(cond, Box::new(body)))
+  }
+
+  // a for statement is just sugar for a while, so this desugars it all
+  fn for_statement(&self) -> Result<Stmt> {
+    // first parse
+    self.consume(TT::LeftParen, "Expect '(' after 'for'.")?;
+
+    let initializer: Option<Stmt> = if self.next_matches(&[TT::Semicolon]) {
+      None
+    } else if self.next_matches(&[TT::Var]) {
+      Some(self.var_declaration()?)
+    } else {
+      Some(self.expression_statement()?)
+    };
+
+    let cond = if !self.check(&TT::Semicolon) {
+      Some(self.expression()?)
+    } else {
+      None
+    };
+
+    self.consume(TT::Semicolon, "Expect ';' after loop condition.")?;
+
+    let inc = if !self.check(&TT::RightParen) {
+      Some(self.expression()?)
+    } else {
+      None
+    };
+
+    self.consume(TT::RightParen, "Expect ')' after for clauses.")?;
+
+    let mut body = self.statement()?;
+
+    // now, desugar:
+    // desugar the increment onto the end of the block
+    if let Some(increment) = inc {
+      body = Stmt::Block(vec![body, Stmt::Expression(increment)]);
+    }
+
+    // and the condition onto the front of it
+    let condition = cond.unwrap_or_else(|| expr::bool_expression(true));
+    body = Stmt::While(condition, Box::new(body));
+
+    // and the initializer before the whole thing
+    if let Some(init) = initializer {
+      body = Stmt::Block(vec![init, body]);
+    }
+
+    Ok(body)
   }
 
   fn block(&self) -> Result<Vec<Stmt>> {

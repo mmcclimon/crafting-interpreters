@@ -60,6 +60,15 @@ impl Interpreter {
           self.execute(*else_branch)?;
         }
       },
+
+      Stmt::While(cond, body) => {
+        // This cloning sorta stinks, but I wrote this such that eval consumes
+        // the expr. I should reconsider that, maybe, but it wasn't trivially
+        // doable, so let's get this working first.
+        while self.eval_expr(cond.clone())?.is_truthy() {
+          self.execute((*body).clone())?;
+        }
+      },
     };
 
     Ok(())
