@@ -18,13 +18,13 @@ impl Interpreter {
 
   pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<()> {
     for stmt in statements {
-      self.execute(stmt)?;
+      self.execute(&stmt)?;
     }
 
     Ok(())
   }
 
-  fn execute(&mut self, stmt: Stmt) -> Result<()> {
+  fn execute(&mut self, stmt: &Stmt) -> Result<()> {
     match stmt {
       Stmt::Empty => (),
       Stmt::Block(block) => {
@@ -55,9 +55,9 @@ impl Interpreter {
       // control flow
       Stmt::If(cond, then_branch, else_branch) => {
         if self.eval_expr(cond)?.is_truthy() {
-          self.execute(*then_branch)?;
+          self.execute(then_branch)?;
         } else {
-          self.execute(*else_branch)?;
+          self.execute(else_branch)?;
         }
       },
 
@@ -65,8 +65,8 @@ impl Interpreter {
         // This cloning sorta stinks, but I wrote this such that eval consumes
         // the expr. I should reconsider that, maybe, but it wasn't trivially
         // doable, so let's get this working first.
-        while self.eval_expr(cond.clone())?.is_truthy() {
-          self.execute((*body).clone())?;
+        while self.eval_expr(cond)?.is_truthy() {
+          self.execute(body)?;
         }
       },
     };
@@ -74,31 +74,33 @@ impl Interpreter {
     Ok(())
   }
 
-  fn eval_expr(&mut self, expr: Box<Expr>) -> Result<LoxValue> {
-    let val = match *expr {
-      Expr::Literal(val) => val.into(),
-      Expr::Grouping(e) => self.eval_expr(e)?,
-      Expr::Unary(op, right) => self.eval_unary_expr(op, right)?,
-      Expr::Binary(left, op, right) => self.eval_binary_expr(left, op, right)?,
+  fn eval_expr(&mut self, expr: &Box<Expr>) -> Result<LoxValue> {
+    let val = match expr.as_ref() {
+      Expr::Literal(val) => val.clone().into(),
+      Expr::Grouping(e) => self.eval_expr(&e)?,
+      Expr::Unary(ref op, ref right) => self.eval_unary_expr(op, right)?,
+      Expr::Binary(ref left, ref op, ref right) => {
+        self.eval_binary_expr(left, op, right)?
+      },
       Expr::Variable(ref token) => self.env.get(token)?,
       Expr::Assign(token, expr) => {
-        let value = self.eval_expr(expr)?;
+        let value = self.eval_expr(&expr)?;
         self.env.assign(&token, value.clone())?;
         value
       },
       Expr::Logical(left, op, right) => {
-        let left_val = self.eval_expr(left)?;
+        let left_val = self.eval_expr(&left)?;
         let left_true = left_val.is_truthy();
 
         if op.kind_matches(&TT::Or) {
           if left_true {
             left_val
           } else {
-            self.eval_expr(right)?
+            self.eval_expr(&right)?
           }
         } else {
           if left_true {
-            self.eval_expr(right)?
+            self.eval_expr(&right)?
           } else {
             left_val
           }
@@ -109,7 +111,7 @@ impl Interpreter {
     Ok(val)
   }
 
-  fn eval_unary_expr(&mut self, op: Token, right: Box<Expr>) -> Result<LoxValue> {
+  fn eval_unary_expr(&mut self, op: &Token, right: &Box<Expr>) -> Result<LoxValue> {
     let right = self.eval_expr(right)?;
 
     match op.kind {
@@ -119,7 +121,7 @@ impl Interpreter {
           Ok(LoxValue::Number(-1.0 * n))
         } else {
           Err(Error::Runtime(
-            op,
+            op.clone(),
             "unary minus only applicable to numbers".into(),
           ))
         }
@@ -130,9 +132,9 @@ impl Interpreter {
 
   fn eval_binary_expr(
     &mut self,
-    left: Box<Expr>,
-    op: Token,
-    right: Box<Expr>,
+    left: &Box<Expr>,
+    op: &Token,
+    right: &Box<Expr>,
   ) -> Result<LoxValue> {
     use LoxValue as LV;
 
@@ -164,7 +166,7 @@ impl Interpreter {
         (LV::String(a), LV::String(b)) => LV::String(a + &b),
         _ => {
           return Err(Error::Runtime(
-            op,
+            op.clone(),
             "+ needs either strings or numbers".into(),
           ))
         },
@@ -194,10 +196,13 @@ impl Interpreter {
   }
 }
 
-fn assert_two_numbers(op: Token, left: &LoxValue, right: &LoxValue) -> Result<()> {
+fn assert_two_numbers(op: &Token, left: &LoxValue, right: &LoxValue) -> Result<()> {
   if left.type_matches(right) && left.is_number() {
     Ok(())
   } else {
-    Err(Error::Runtime(op, "operands must be two numbers".into()))
+    Err(Error::Runtime(
+      op.clone(),
+      "operands must be two numbers".into(),
+    ))
   }
 }

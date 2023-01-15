@@ -35,8 +35,8 @@ impl Environment {
     self.scopes.pop();
   }
 
-  pub fn define(&mut self, name: String, value: LoxValue) {
-    self.scopes.last_mut().unwrap().insert(name, value);
+  pub fn define(&mut self, name: &str, value: LoxValue) {
+    self.scopes.last_mut().unwrap().insert(name.into(), value);
   }
 
   pub fn get(&self, tok: &Token) -> Result<LoxValue> {
