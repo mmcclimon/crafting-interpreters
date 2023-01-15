@@ -288,8 +288,41 @@ impl Parser {
       let right = self.unary()?;
       Ok(Box::new(Expr::Unary(op.clone(), right)))
     } else {
-      self.primary()
+      self.call()
     }
+  }
+
+  fn call(&self) -> Result<Box<Expr>> {
+    let mut expr = self.primary()?;
+    loop {
+      if self.next_matches(&[TT::LeftParen]) {
+        expr = self.finish_call(expr)?;
+      } else {
+        break;
+      }
+    }
+
+    Ok(expr)
+  }
+
+  fn finish_call(&self, callee: Box<Expr>) -> Result<Box<Expr>> {
+    let mut args = vec![];
+
+    if !self.check(&TT::RightParen) {
+      args.push(self.expression()?);
+
+      while self.next_matches(&[TT::Comma]) {
+        args.push(self.expression()?);
+      }
+    }
+
+    if args.len() >= 255 {
+      // meh, I'm just gonna skip this here
+    }
+
+    let paren = self.consume(TT::RightParen, "Expect ')' after argument list.")?;
+
+    Ok(Box::new(Expr::Call(callee, paren, args)))
   }
 
   // this sucks

@@ -1,14 +1,27 @@
+use std::sync::Arc;
+
 use crate::expr::Literal;
+use crate::interpreter::Interpreter;
 use crate::{Error, Result};
 
 // This is framework I suspect I will need, but am shoving in here for
 // expediency and I'll move it later.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub enum LoxValue {
   Number(f64),
   String(String),
   Boolean(bool),
+  Function(Box<Callable>),
   Nil,
+}
+
+pub type Func = dyn Fn(&mut Interpreter, Vec<LoxValue>) -> Result<LoxValue>;
+
+#[derive(Clone)]
+pub struct Callable {
+  pub arity: usize,
+  // this Arc is just so that I can implement Clone, which I need to do for Reasons.
+  func: Arc<Box<Func>>,
 }
 
 impl LoxValue {
@@ -32,7 +45,21 @@ impl LoxValue {
     if let Self::Number(n) = self {
       *n
     } else {
-      panic!("tried to call as_number() on a non-number variiant");
+      panic!("tried to call as_number() on a non-number variant");
+    }
+  }
+
+  pub fn is_callable(&self) -> bool {
+    match self {
+      Self::Function(_) => true,
+      _ => false,
+    }
+  }
+
+  pub fn as_callable(&self) -> &Callable {
+    match self {
+      Self::Function(c) => c,
+      _ => panic!("tried to call as_callable on a non-callable variant"),
     }
   }
 
@@ -71,7 +98,46 @@ impl std::fmt::Display for LoxValue {
       LoxValue::Number(n) => write!(f, "{}", n),
       LoxValue::String(s) => write!(f, "{}", s),
       LoxValue::Boolean(b) => write!(f, "{}", b),
+      LoxValue::Function(_) => write!(f, "[function object]"),
       LoxValue::Nil => write!(f, "nil"),
     }
+  }
+}
+
+impl std::cmp::PartialEq for LoxValue {
+  fn eq(&self, other: &LoxValue) -> bool {
+    use LoxValue as LV;
+
+    match (self, other) {
+      (LV::Number(a), LV::Number(b)) => a == b,
+      (LV::String(a), LV::String(b)) => a == b,
+      (LV::Boolean(a), LV::Boolean(b)) => a == b,
+      (LV::Function(_), LV::Function(_)) => false, // functions are never equal
+      (LV::Nil, LV::Nil) => true,
+      _ => false,
+    }
+  }
+}
+
+impl Callable {
+  pub fn new(func: Box<Func>, arity: usize) -> Callable {
+    Callable {
+      arity,
+      func: Arc::new(func),
+    }
+  }
+
+  pub fn call(
+    &self,
+    interp: &mut Interpreter,
+    args: Vec<LoxValue>,
+  ) -> Result<LoxValue> {
+    (self.func)(interp, args)
+  }
+}
+
+impl std::fmt::Debug for Callable {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "<native function>")
   }
 }

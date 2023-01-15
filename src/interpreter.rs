@@ -1,3 +1,5 @@
+mod globals;
+
 use crate::environment::Environment;
 use crate::expr::Expr;
 use crate::stmt::Stmt;
@@ -11,9 +13,13 @@ pub struct Interpreter {
 
 impl Interpreter {
   pub fn new() -> Self {
-    Interpreter {
+    let mut int = Interpreter {
       env: Environment::new(),
-    }
+    };
+
+    globals::install_in(&mut int.env);
+
+    int
   }
 
   pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<()> {
@@ -105,6 +111,31 @@ impl Interpreter {
             left_val
           }
         }
+      },
+      Expr::Call(callee, paren, args) => {
+        let callee = self.eval_expr(callee)?;
+
+        if !callee.is_callable() {
+          return Err(Error::Runtime(
+            paren.clone(),
+            "can only call functions and classes".into(),
+          ));
+        }
+
+        let func = callee.as_callable();
+        if args.len() != func.arity {
+          return Err(Error::Runtime(
+            paren.clone(),
+            format!("Expected {} arguments but got {}.", func.arity, args.len()),
+          ));
+        }
+
+        let mut arguments = vec![];
+        for arg in args {
+          arguments.push(self.eval_expr(arg)?);
+        }
+
+        func.call(self, arguments)?
       },
     };
 

@@ -14,6 +14,7 @@ pub mod ast_printer {
       Expr::Variable(name) => format!("var {name}"),
       Expr::Assign(_tok, _expr) => todo!(),
       Expr::Logical(_left, _op, _right) => todo!(),
+      Expr::Call(_callee, _paren, _args) => todo!(),
     }
   }
 
