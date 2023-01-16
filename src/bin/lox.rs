@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::process;
 
-use lox::{Error, Interpreter, Parser, Result, Scanner};
+use lox::{Error, Interpreter, Parser, Resolver, Result, Scanner};
 
 fn main() -> Result<()> {
   let args = std::env::args().skip(1).collect::<Vec<_>>();
@@ -66,7 +66,12 @@ fn run(source: String) -> Result<()> {
   let statements = parser.parse();
 
   match statements {
-    Ok(stmts) => interpreter.interpret(stmts),
+    Ok(stmts) => {
+      let resolver = Resolver::new(&interpreter);
+      resolver.resolve(&stmts);
+
+      interpreter.interpret(stmts)
+    },
     Err(Error::ParseFailed) => {
       for err in parser.errors {
         eprintln!("{err}")

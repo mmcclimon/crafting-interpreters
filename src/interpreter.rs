@@ -1,4 +1,5 @@
-mod globals;
+use std::cell::RefCell;
+use std::collections::HashMap;
 
 use crate::environment::Environment;
 use crate::expr::Expr;
@@ -6,20 +7,28 @@ use crate::stmt::Stmt;
 use crate::value::LoxValue;
 use crate::{Error, Result, Token, TokenType as TT};
 
+mod globals;
+
 #[derive(Debug)]
 pub struct Interpreter {
   env: Environment,
+  locals: RefCell<HashMap<Expr, usize>>,
 }
 
 impl Interpreter {
   pub fn new() -> Self {
     let mut int = Interpreter {
       env: Environment::new(),
+      locals: RefCell::new(HashMap::new()),
     };
 
     globals::install_in(&mut int.env);
 
     int
+  }
+
+  pub fn resolve(&self, expr: &Expr, level: usize) {
+    self.locals.borrow_mut().insert(expr.clone(), level);
   }
 
   pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<()> {
@@ -131,10 +140,16 @@ impl Interpreter {
       Expr::Binary(ref left, ref op, ref right) => {
         self.eval_binary_expr(left, op, right)?
       },
-      Expr::Variable(ref token) => self.env.get(token)?,
+      Expr::Variable(token) => self.lookup_variable(token, expr)?,
       Expr::Assign(token, expr) => {
         let value = self.eval_expr(&expr)?;
-        self.env.assign(&token, value.clone())?;
+
+        if let Some(dist) = self.locals.borrow().get(expr) {
+          self.env.assign_at(*dist, token, value.clone())?;
+        } else {
+          self.env.assign(&token, value.clone())?;
+        }
+
         value
       },
       Expr::Logical(left, op, right) => {
@@ -183,6 +198,14 @@ impl Interpreter {
     };
 
     Ok(val)
+  }
+
+  fn lookup_variable(&self, tok: &Token, expr: &Expr) -> Result<LoxValue> {
+    if let Some(dist) = self.locals.borrow().get(expr) {
+      self.env.get_at(*dist, tok)
+    } else {
+      self.env.get(tok)
+    }
   }
 
   fn eval_unary_expr(&mut self, op: &Token, right: &Box<Expr>) -> Result<LoxValue> {

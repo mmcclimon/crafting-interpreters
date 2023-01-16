@@ -54,6 +54,24 @@ impl Environment {
     ))
   }
 
+  pub fn get_at(&self, dist: usize, tok: &Token) -> Result<LoxValue> {
+    let name = tok.lexeme();
+
+    let scope = self
+      .scopes
+      .iter()
+      .rev()
+      .skip(dist)
+      .next()
+      .expect("math error in get_at");
+
+    let val = scope
+      .get(&name)
+      .expect("variable lookup failed, and should not have");
+
+    Ok((*val).clone())
+  }
+
   pub fn assign(&mut self, tok: &Token, new_value: LoxValue) -> Result<()> {
     let name = tok.lexeme();
 
@@ -68,5 +86,26 @@ impl Environment {
       tok.clone(),
       format!("undefined variable '{name}'."),
     ))
+  }
+
+  pub fn assign_at(
+    &mut self,
+    dist: usize,
+    tok: &Token,
+    new_value: LoxValue,
+  ) -> Result<()> {
+    let name = tok.lexeme();
+
+    let scope = self
+      .scopes
+      .iter_mut()
+      .rev()
+      .skip(dist)
+      .next()
+      .expect("math error in get_at");
+
+    scope.insert(name, new_value);
+
+    Ok(())
   }
 }

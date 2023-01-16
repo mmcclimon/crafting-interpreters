@@ -52,7 +52,7 @@ pub enum TokenType {
 }
 
 #[allow(unused)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Token {
   pub kind: TokenType,
   pub line: usize,
@@ -165,3 +165,18 @@ impl std::fmt::Display for TokenType {
     write!(f, "{}", self.as_str())
   }
 }
+
+impl std::hash::Hash for TokenType {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    use TokenType as TT;
+
+    match self {
+      TT::Identifier(s) => s.hash(state),
+      TT::String(s) => s.hash(state),
+      TT::Number(n) => n.to_be_bytes().hash(state), // lolwut
+      _ => self.hash(state),
+    }
+  }
+}
+
+impl std::cmp::Eq for TokenType {}

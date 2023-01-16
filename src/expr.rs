@@ -2,7 +2,7 @@ use crate::Token;
 
 // This might be totally bananas, but we'll see.
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
   Number(f64),
   String(String),
@@ -10,7 +10,7 @@ pub enum Literal {
   Nil,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
   Assign(Token, Box<Expr>),
   Binary(Box<Expr>, Token, Box<Expr>),
@@ -42,3 +42,16 @@ impl std::fmt::Display for Literal {
     }
   }
 }
+
+impl std::hash::Hash for Literal {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    match self {
+      Literal::String(s) => s.hash(state),
+      Literal::Boolean(b) => b.hash(state),
+      Literal::Nil => "nil".hash(state),
+      Literal::Number(n) => n.to_be_bytes().hash(state), // lolwut
+    }
+  }
+}
+
+impl std::cmp::Eq for Literal {}
